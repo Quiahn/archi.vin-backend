@@ -2,9 +2,10 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
+require('dotenv').config()
 
 // require route files
-const exampleRoutes = require('./app/routes/example_routes')
+const blobRoutes = require('./app/routes/blob_routes')
 const userRoutes = require('./app/routes/user_routes')
 
 // require middleware
@@ -26,10 +27,11 @@ const clientDevPort = 7165
 // establish database connection
 // use new version of URL parser
 // use createIndex instead of deprecated ensureIndex
-mongoose.connect(db, {
-  useNewUrlParser: true,
-  useCreateIndex: true,
-  useUnifiedTopology: true
+mongoose.connect(
+  db,
+  async(err)=>{
+    if(err) throw err;
+    console.log("connected to db")
 })
 
 // instantiate express application object
@@ -37,7 +39,7 @@ const app = express()
 
 // set CORS headers on response from this API using the `cors` NPM package
 // `CLIENT_ORIGIN` is an environment variable that will be set on Heroku
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || `http://localhost:${clientDevPort}` }))
+app.use(cors({ origin: `http://localhost:${clientDevPort}` || process.env.CLIENT_ORIGIN }))
 
 // define port for API to run on
 const port = process.env.PORT || serverDevPort
@@ -56,7 +58,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(requestLogger)
 
 // register route files
-app.use(exampleRoutes)
+app.use(blobRoutes)
 app.use(userRoutes)
 
 // register error handling middleware
