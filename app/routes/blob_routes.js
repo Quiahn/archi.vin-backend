@@ -3,6 +3,9 @@ const express = require('express')
 // Passport docs: http://www.passportjs.org/docs/
 const passport = require('passport')
 
+// Azure Blob Storage
+const azure = require('@azure/storage-blob')
+
 // pull in Mongoose model for blobs
 const Blob = require('../models/blob')
 
@@ -30,86 +33,109 @@ const router = express.Router()
 // INDEX
 // GET /blobs
 router.get('/blobs', requireToken, (req, res, next) => {
-  Blob.find()
-    .then(blobs => {
-      // `blobs` will be an array of Mongoose documents
-      // we want to convert each one to a POJO, so we use `.map` to
-      // apply `.toObject` to each one
-      return blobs.map(blob => blob.toObject())
-    })
-    // respond with status 200 and JSON of the blobs
-    .then(blobs => res.status(200).json({ blobs: blobs }))
-    // if an error occurs, pass it to the handler
-    .catch(next)
+    Blob.find()
+        .then(blobs => {
+            // `blobs` will be an array of Mongoose documents
+            // we want to convert each one to a POJO, so we use `.map` to
+            // apply `.toObject` to each one
+            return blobs.map(blob => blob.toObject())
+        })
+        // respond with status 200 and JSON of the blobs
+        .then(blobs => res.status(200).json({ blobs: blobs }))
+        // if an error occurs, pass it to the handler
+        .catch(next)
 })
 
 // SHOW
 // GET /blobs/5a7db6c74d55bc51bdf39793
 router.get('/blobs/:id', requireToken, (req, res, next) => {
-  // req.params.id will be set based on the `:id` in the route
-  Blob.findById(req.params.id)
-    .then(handle404)
-    // if `findById` is succesful, respond with 200 and "blob" JSON
-    .then(blob => res.status(200).json({ blob: blob.toObject() }))
-    // if an error occurs, pass it to the handler
-    .catch(next)
+    // req.params.id will be set based on the `:id` in the route
+    Blob.findById(req.params.id)
+        .then(handle404)
+        // if `findById` is succesful, respond with 200 and "blob" JSON
+        .then(blob => res.status(200).json({ blob: blob.toObject() }))
+        // if an error occurs, pass it to the handler
+        .catch(next)
 })
 
 // CREATE
 // POST /blobs
-router.post('/blobs', requireToken, (req, res, next) => {
-  // set owner of new blob to be current user
-  req.body.blob.owner = req.user.id
+router.post('/blobs', async (req, res, next) => {
+    // set owner of new blob to be current user
+    const data = req.files.file
+    const title = req.body.title
+    const userId = req.body.userId
 
-  Blob.create(req.body.blob)
-    // respond to succesful `create` with status 201 and JSON of new "blob"
-    .then(blob => {
-      res.status(201).json({ blob: blob.toObject() })
-    })
-    // if an error occurs, pass it off to our error handler
-    // the error handler needs the error message and the `res` object so that it
-    // can send an error message back to the client
-    .catch(next)
+    // console.log(Buffer.isBuffer(data.data))
+    // Create new client to connect to storage
+    const blobServiceClient = azure.BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+    
+    // Get the container that we are uploading to, if it doesn't exist create one
+    const containerClient = blobServiceClient.getContainerClient('archivin-container')
+    containerClient.createIfNotExists({ access: 'container' })
+    
+    // Create new blockBlobClient to manipulate a block blob | a block blob is the most common type, it can be any file
+    const blockBlobClient = containerClient.getBlockBlobClient(req.body.title)
+    
+
+    // set mimetype as determined from browser with file upload control
+    const options = { blobHTTPHeaders: { blobContentType: data.mimetype } };
+
+    // Upload data to the blob
+    const uploadBlobResponse = await blockBlobClient.upload(data.data, data.data.length, options)
+    console.log(`Upload block blob ${title} successfully`)
+
+    const blob = {title: title, url: 'https://archivinstorage.blob.core.windows.net/archivin-container/' + title, owner: userId}
+
+    await Blob.create(blob)
+        // respond to succesful `create` with status 201 and JSON of new "blob"
+        .then(blob => {
+            res.status(201).json({ blob: blob.toObject() })
+        })
+        // if an error occurs, pass it off to our error handler
+        // the error handler needs the error message and the `res` object so that it
+        // can send an error message back to the client
+        .catch(next)
 })
 
 // UPDATE
 // PATCH /blobs/5a7db6c74d55bc51bdf39793
 router.patch('/blobs/:id', requireToken, removeBlanks, (req, res, next) => {
-  // if the client attempts to change the `owner` property by including a new
-  // owner, prevent that by deleting that key/value pair
-  delete req.body.blob.owner
+    // if the client attempts to change the `owner` property by including a new
+    // owner, prevent that by deleting that key/value pair
+    delete req.body.blob.owner
 
-  Blob.findById(req.params.id)
-    .then(handle404)
-    .then(blob => {
-      // pass the `req` object and the Mongoose record to `requireOwnership`
-      // it will throw an error if the current user isn't the owner
-      requireOwnership(req, blob)
+    Blob.findById(req.params.id)
+        .then(handle404)
+        .then(blob => {
+            // pass the `req` object and the Mongoose record to `requireOwnership`
+            // it will throw an error if the current user isn't the owner
+            requireOwnership(req, blob)
 
-      // pass the result of Mongoose's `.update` to the next `.then`
-      return blob.updateOne(req.body.blob)
-    })
-    // if that succeeded, return 204 and no JSON
-    .then(() => res.sendStatus(204))
-    // if an error occurs, pass it to the handler
-    .catch(next)
+            // pass the result of Mongoose's `.update` to the next `.then`
+            return blob.updateOne(req.body.blob)
+        })
+        // if that succeeded, return 204 and no JSON
+        .then(() => res.sendStatus(204))
+        // if an error occurs, pass it to the handler
+        .catch(next)
 })
 
 // DESTROY
 // DELETE /blobs/5a7db6c74d55bc51bdf39793
 router.delete('/blobs/:id', requireToken, (req, res, next) => {
-  Blob.findById(req.params.id)
-    .then(handle404)
-    .then(blob => {
-      // throw an error if current user doesn't own `blob`
-      requireOwnership(req, blob)
-      // delete the blob ONLY IF the above didn't throw
-      blob.deleteOne()
-    })
-    // send back 204 and no content if the deletion succeeded
-    .then(() => res.sendStatus(204))
-    // if an error occurs, pass it to the handler
-    .catch(next)
+    Blob.findById(req.params.id)
+        .then(handle404)
+        .then(blob => {
+            // throw an error if current user doesn't own `blob`
+            requireOwnership(req, blob)
+            // delete the blob ONLY IF the above didn't throw
+            blob.deleteOne()
+        })
+        // send back 204 and no content if the deletion succeeded
+        .then(() => res.sendStatus(204))
+        // if an error occurs, pass it to the handler
+        .catch(next)
 })
 
 module.exports = router
