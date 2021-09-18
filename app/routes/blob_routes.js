@@ -32,8 +32,9 @@ const router = express.Router()
 
 // INDEX
 // GET /blobs
-router.get('/blobs', requireToken, (req, res, next) => {
-    Blob.find()
+router.post('/list-blobs/', requireToken, (req, res, next) => {
+    console.log(req.body)
+    Blob.find({ owner: req.body._id })
         .then(blobs => {
             // `blobs` will be an array of Mongoose documents
             // we want to convert each one to a POJO, so we use `.map` to
@@ -41,6 +42,7 @@ router.get('/blobs', requireToken, (req, res, next) => {
             return blobs.map(blob => blob.toObject())
         })
         // respond with status 200 and JSON of the blobs
+        .then(blobs => {console.log(blobs); return blobs})
         .then(blobs => res.status(200).json({ blobs: blobs }))
         // if an error occurs, pass it to the handler
         .catch(next)
@@ -48,7 +50,7 @@ router.get('/blobs', requireToken, (req, res, next) => {
 
 // SHOW
 // GET /blobs/5a7db6c74d55bc51bdf39793
-router.get('/blobs/:id', requireToken, (req, res, next) => {
+router.get('/blobs/:id', (req, res, next) => {
     // req.params.id will be set based on the `:id` in the route
     Blob.findById(req.params.id)
         .then(handle404)
@@ -60,13 +62,16 @@ router.get('/blobs/:id', requireToken, (req, res, next) => {
 
 // CREATE
 // POST /blobs
-router.post('/blobs', async (req, res, next) => {
+router.post('/blobs', requireToken, async (req, res, next) => {
     // set owner of new blob to be current user
     const data = req.files.file
-    const title = req.body.title
-    const userId = req.body.userId
+    const {title, artist, userId} = req.body
 
-    // console.log(Buffer.isBuffer(data.data))
+    // get time to stop duplicates
+    const d = new Date()
+    const t = d.getTime()
+    const titleWithDate = title + t
+
     // Create new client to connect to storage
     const blobServiceClient = azure.BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
     
@@ -75,7 +80,7 @@ router.post('/blobs', async (req, res, next) => {
     containerClient.createIfNotExists({ access: 'container' })
     
     // Create new blockBlobClient to manipulate a block blob | a block blob is the most common type, it can be any file
-    const blockBlobClient = containerClient.getBlockBlobClient(req.body.title)
+    const blockBlobClient = containerClient.getBlockBlobClient(titleWithDate)
     
 
     // set mimetype as determined from browser with file upload control
@@ -83,9 +88,9 @@ router.post('/blobs', async (req, res, next) => {
 
     // Upload data to the blob
     const uploadBlobResponse = await blockBlobClient.upload(data.data, data.data.length, options)
-    console.log(`Upload block blob ${title} successfully`)
+    console.log(`Upload block blob ${titleWithDate} successfully`)
 
-    const blob = {title: title, url: 'https://archivinstorage.blob.core.windows.net/archivin-container/' + title, owner: userId}
+    const blob = {title: title, artist: artist, url: 'https://archivinstorage.blob.core.windows.net/archivin-container/' + title, owner: userId}
 
     await Blob.create(blob)
         // respond to succesful `create` with status 201 and JSON of new "blob"

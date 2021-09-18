@@ -5,6 +5,10 @@ const blobSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    artist: {
+        type: String,
+        required: true
+    },
     url: {
         type: String,
         required: true
