@@ -31,9 +31,8 @@ const requireToken = passport.authenticate('bearer', { session: false })
 const router = express.Router()
 
 // INDEX
-// GET /blobs
+// POST /blobs
 router.post('/list-blobs/', requireToken, (req, res, next) => {
-    console.log(req.body)
     Blob.find({ owner: req.body._id })
         .then(blobs => {
             // `blobs` will be an array of Mongoose documents
@@ -42,7 +41,6 @@ router.post('/list-blobs/', requireToken, (req, res, next) => {
             return blobs.map(blob => blob.toObject())
         })
         // respond with status 200 and JSON of the blobs
-        .then(blobs => {console.log(blobs); return blobs})
         .then(blobs => res.status(200).json({ blobs: blobs }))
         // if an error occurs, pass it to the handler
         .catch(next)
@@ -67,17 +65,23 @@ router.post('/blobs', requireToken, async (req, res, next) => {
     const data = req.files.file
     const {title, artist, userId} = req.body
 
+    console.log(data.size)
+    if(data.size > 100000000) {
+        res.sendStatus(413)
+        return
+    }
+
     // get time to stop duplicates
     const d = new Date()
     const t = d.getTime()
     const titleWithDate = title + t
-
+    titleWithDate.replace(' ', '%')
+    console.log(titleWithDate)
     // Create new client to connect to storage
     const blobServiceClient = azure.BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
     
     // Get the container that we are uploading to, if it doesn't exist create one
     const containerClient = blobServiceClient.getContainerClient('archivin-container')
-    containerClient.createIfNotExists({ access: 'container' })
     
     // Create new blockBlobClient to manipulate a block blob | a block blob is the most common type, it can be any file
     const blockBlobClient = containerClient.getBlockBlobClient(titleWithDate)
@@ -87,11 +91,14 @@ router.post('/blobs', requireToken, async (req, res, next) => {
     const options = { blobHTTPHeaders: { blobContentType: data.mimetype } };
 
     // Upload data to the blob
-    const uploadBlobResponse = await blockBlobClient.upload(data.data, data.data.length, options)
+    console.log('made it to upload')
+    await blockBlobClient.upload(data.data, data.data.length, options)
+        .catch(console.error)
     console.log(`Upload block blob ${titleWithDate} successfully`)
 
-    const blob = {title: title, artist: artist, url: 'https://archivinstorage.blob.core.windows.net/archivin-container/' + title, owner: userId}
-
+    const blob = {title: title, artist: artist, url: 'https://archivinstorage.blob.core.windows.net/archivin-container/' + titleWithDate, owner: userId}
+    
+    console.log('made it to mongo create')
     await Blob.create(blob)
         // respond to succesful `create` with status 201 and JSON of new "blob"
         .then(blob => {
@@ -108,20 +115,23 @@ router.post('/blobs', requireToken, async (req, res, next) => {
 router.patch('/blobs/:id', requireToken, removeBlanks, (req, res, next) => {
     // if the client attempts to change the `owner` property by including a new
     // owner, prevent that by deleting that key/value pair
-    delete req.body.blob.owner
+    delete req.body.owner
 
     Blob.findById(req.params.id)
         .then(handle404)
+
         .then(blob => {
             // pass the `req` object and the Mongoose record to `requireOwnership`
             // it will throw an error if the current user isn't the owner
             requireOwnership(req, blob)
 
             // pass the result of Mongoose's `.update` to the next `.then`
-            return blob.updateOne(req.body.blob)
+            return blob.updateOne(req.body)
         })
+
         // if that succeeded, return 204 and no JSON
         .then(() => res.sendStatus(204))
+
         // if an error occurs, pass it to the handler
         .catch(next)
 })
@@ -131,6 +141,28 @@ router.patch('/blobs/:id', requireToken, removeBlanks, (req, res, next) => {
 router.delete('/blobs/:id', requireToken, (req, res, next) => {
     Blob.findById(req.params.id)
         .then(handle404)
+
+        .then(async blob => {
+            // Create new client to connect to storage
+            const blobServiceClient = azure.BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING)
+
+            // Get the container that we are uploading to, if it doesn't exist create one
+            const containerClient = blobServiceClient.getContainerClient('archivin-container')
+            containerClient.createIfNotExists({ access: 'container' })
+
+            // splitting url to get name of blob
+            const url = blob.url.split('archivin-container/')
+
+            // Create new blockBlobClient to manipulate a block blob | a block blob is the most common type, it can be any file
+            const blockBlobClient = containerClient.getBlockBlobClient(url[url.length-1])
+
+            // Upload data to the blob
+            await blockBlobClient.delete()
+            console.log(`Deleted block blob ${url[url.length-1]} successfully`)
+
+            return blob
+        })
+
         .then(blob => {
             // throw an error if current user doesn't own `blob`
             requireOwnership(req, blob)
