@@ -98,85 +98,84 @@ const changePassword = (passwords, user) => {
 }
 ```
 
-### `/lists`
-- Used for show all list
-- Method: GET
-- Expects: 
-  - User Token
-  - Example:
-``` js
-const indexList = (user) => {
-  return axios({
-    url: apiUrl + '/lists',
-    method: 'get',
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
-}
-```
-
-### `/lists`
-- Used to create a list 
+### `/list-blobs/`
+- Used to list all stored items
 - Method: POST
 - Expects:
-  - User Token, List Name, List Month
+  - User Token
+  - User Id
   - Example:
 ``` js
-const createList = (data, user) => {
-  return axios({
-    url: apiUrl + '/lists',
-    method: 'post',
-    data: { list: data },
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
+const indexBlob = (user) => {
+    return axios({
+        url: apiUrl + '/list-blobs/',
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${user.token}`
+        },
+        data: user
+    })
 }
 ```
 
-### `/lists/:id`
-- Used for getting a single list
+### `/blobs`
+- Used to create a storage item
+- Method: POST
+- Expects:
+  - User Token, FormData (that includes a file, title, artist, and User Id)
+  - Example:
+``` js
+const createBlob = (user, data) => {
+    return axios({
+        method: 'POST',
+        url: apiUrl + '/blobs',
+        headers: {
+            Authorization: `Bearer ${user.token}`
+        },
+        data: data
+    })
+}
+```
+
+### `/blobs/:id`
+- Used for getting a specific storage item
 - Method: GET
 - Expects:
-  - User Token
+  - Storage Item Id
   - Example:
 ``` js
-const showList = (id, user) => {
-  return axios({
-    url: apiUrl + '/lists/' + id,
-    method: 'get',
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
+const showBlob = (id) => {
+    return axios({
+        url: apiUrl + '/blobs/' + id,
+        method: 'GET'
+    })
 }
 ```
 
-### `/lists/:id`
-- Used to update a list
+### `/blobs/:id`
+- Used to update a storage item
 - Method: PATCH
 - Expects:
-  - User Token, List Name, List Month
+  - User Token, User Object, Storage Item Id, FormData (that includes a file, title, artist, and User Id)
   - Example:
 ``` js
-const updateList = (listData, id, user) => {
-  return axios({
-    method: 'PATCH',
-    url: apiUrl + '/lists/' + id,
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    },
-    data: { list: listData }
-  })
+export const editBlob = (user, id, data) => {
+    return axios({
+        url: apiUrl + '/blobs/' + id,
+        method: 'PATCH',
+        headers: {
+            Authorization: `Bearer ${user.token}`
+        },
+        data: data
+    })
 }
 ```
 
-### `/lists/:id`
-- Used for deleting a list
+### `/blobs/:id`
+- Used for deleting a storage item
 - Method: DELETE
 - Expects:
-  - User Token
+  - User Token, Storage Item Id
   - Example:
 ``` js
 const deleteList = (id, user) => {
@@ -190,85 +189,9 @@ const deleteList = (id, user) => {
 }
 ```
 
-### `/tasks/:id`
-- Used for creating a task
-- Method: POST
-- Expects:
-  - User Token, Task Name, Task Done (Boolean)
-  - Example:
-``` js
-const createTask = (id, data, user) => {
-  return axios({
-    url: apiUrl + '/tasks/' + id,
-    method: 'post',
-    data: { task: data },
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
-}
-```
-
-### `/tasks/:id/:taskId`
-- Used for showing task
-- Method: GET
-- Expects:
-  - User Token
-  - Example:
-``` js
-const showTask = (id, user, taskId) => {
-  return axios({
-    url: apiUrl + '/tasks/' + id + '/' + taskId,
-    method: 'get',
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
-}
-```
-
-### `/tasks/:id/:taskId`
-- Used for updating a task
-- Method: PATCH
-- Expects:
-  - User Token, Task Name, Task Done (Boolean)
-  - Example:
-``` js
-const updateTask = (taskData, id, user, taskId) => {
-  return axios({
-    method: 'PATCH',
-    url: apiUrl + '/tasks/' + id + '/' + taskId,
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    },
-    data: { task: taskData }
-  })
-}
-```
-
-### `/tasks/:id/:taskId`
-- Used for deleting a task
-- Method: DELETE
-- Expects:
-  - User Token
-  - Example:
-``` js
-const deleteTask = (id, user, taskId) => {
-  return axios({
-    url: apiUrl + '/tasks/' + id + '/' + taskId,
-    method: 'delete',
-    headers: {
-      Authorization: `Bearer ${user.token}`
-    }
-  })
-}
-```
-
-
-
 ## `ERD`
 A user has a many list and the list has many items.
-![ERD Image](https://i.imgur.com/VAtPHTv.png)
+![ERD Image](https://i.imgur.com/rkqQgOn.png)
 
 ## `Planning Time Table`
 
@@ -278,19 +201,20 @@ A user has a many list and the list has many items.
 - Set up front end repo
 
 ### Day2:
-- Start back-end routes and test with postman
-- Start front-end
+- Start back-end routes
+- Start learning azure blob storage & cosmos db
 
 ### Day3:
-- Keep working on front-end and back-end
-- plan for styling
+- Get storage and database functionality working
+- Finish back-end crud
 
 ### Day 4:
-- Finish front-end
+- Start front-end
 - Finish back-end
 - Start styling
 
 ### Day 5:
+- Complete front-end
 - Complete Styling
 
 ## `Technology Used`
