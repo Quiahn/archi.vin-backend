@@ -7,8 +7,8 @@ once the install is done run the command `nodemon server.js`, this command will 
 
 ## `Urls`
 - [Front End GitHub Link](https://github.com/Quiahn/archi.vin "Archi.vin's Front-End Repository")
-- [Deployed Site](https://niq-project.github.io/niq/ "Monthly Website")
-- [Back-End](https://git.heroku.com/monthly-backend.git "Monthly's Back-End Website")
+- [Deployed Site](https://quiahn.github.io/archi.vin/  "Archi.vin Website")
+- [Back-End](https://archivin-backend.herokuapp.com/ "Archi.vin's Back-End Website")
 
 ## `Pitch`
 Archi.vin is a audio file sharing service where you can upload songs and share it with just a url.
