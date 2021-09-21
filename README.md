@@ -190,7 +190,7 @@ const deleteList = (id, user) => {
 ```
 
 ## `ERD`
-A user has a many list and the list has many items.
+A user has a many list and the list has many items. <br />
 ![ERD Image](https://i.imgur.com/rkqQgOn.png)
 
 ## `Planning Time Table`
