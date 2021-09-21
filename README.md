@@ -1,6 +1,10 @@
 # `ARCHI.VIN` <br />
 made by Quiahn Ballou
 
+## `Setting Up Archi.vin's Backend`
+First fork and clone this repository. Once it is cloned go into the directory and run `npm install`, this command will install all packages used in this project.
+once the install is done run the command `nodemon server.js`, this command will start up the server from there you can try to use the routes listed below.
+
 ## `Urls`
 - [Front End GitHub Link](https://github.com/Quiahn/archi.vin "Archi.vin's Front-End Repository")
 - [Deployed Site](https://niq-project.github.io/niq/ "Monthly Website")
