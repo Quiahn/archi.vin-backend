@@ -1,39 +1,39 @@
 {
-  "name": "express-api-template",
-  "version": "0.0.1",
-  "description": "",
+  "name": "server",
+  "version": "1.0.0",
+  "description": "[![General Assembly Logo](https://camo.githubusercontent.com/1a91b05b8f4d44b5bbfb83abac2b0996d8e26c92/687474703a2f2f692e696d6775722e636f6d2f6b6538555354712e706e67)](https://generalassemb.ly/education/web-development-immersive)",
   "main": "server.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.8.0",
+    "bcrypt": "^5.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongodb": "^4.1.2",
+    "mongoose": "^6.0.6",
+    "passport": "^0.4.1",
+    "passport-http-bearer": "^1.0.1",
+    "react-jinke-music-player": "^4.24.1"
+  },
+  "devDependencies": {},
   "scripts": {
-    "start": "node server.js",
-    "test": "mocha --exit",
-    "server": "nodemon server.js",
-    "serve": "nodemon server.js",
-    "s": "nodemon server.js",
-    "debug-server": "DEBUG=express:* nodemon server.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Quiahn/arvhi.vin-backend.git"
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "bcrypt": "^3.0.7",
-    "cors": "^2.8.5",
-    "dotenv": "^8.2.0",
-    "express": "^4.17.1",
-    "jsonwebtoken": "^8.5.1",
-    "mongodb": "^3.4.0",
-    "mongoose": "^5.8.1",
-    "passport": "^0.4.1",
-    "passport-http-bearer": "^1.0.1"
+  "bugs": {
+    "url": "https://github.com/Quiahn/arvhi.vin-backend/issues"
   },
-  "devDependencies": {
-    "chai": "^4.2.0",
-    "chai-http": "^4.3.0",
-    "eslint": "^6.7.2",
-    "mocha": "^6.2.2",
-    "nodemon": "^2.0.2",
-    "standard": "^14.3.1"
-  },
-  "engines": {
-    "node": "10.15.0",
-    "npm": "6.4.1"
-  }
+  "homepage": "https://github.com/Quiahn/arvhi.vin-backend#readme"
 }
